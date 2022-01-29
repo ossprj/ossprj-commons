@@ -1,8 +1,8 @@
 package com.ossprj.commons.torrent.model;
 
-public enum TorrentValidationStatus {
+public enum TorrentVerificationStatus {
 
-    VALIDATED,
+    VERIFIED,
     FAILED,
     INCOMPLETE
 

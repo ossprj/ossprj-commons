@@ -2,9 +2,8 @@ package com.ossprj.commons.torrent.function;
 
 import com.ossprj.commons.torrent.model.Torrent;
 import com.ossprj.commons.torrent.model.TorrentFile;
-import com.ossprj.commons.torrent.function.ComputePieceHash;
-import com.ossprj.commons.torrent.model.TorrentValidationReport;
-import com.ossprj.commons.torrent.model.TorrentValidationStatus;
+import com.ossprj.commons.torrent.model.TorrentVerificationReport;
+import com.ossprj.commons.torrent.model.TorrentVerificationStatus;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -17,15 +16,15 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
-public class ValidateTorrentContent {
+public class VerifyTorrentContent {
 
     private final ExecutorService executorService;
 
-    public ValidateTorrentContent(ExecutorService executorService) {
+    public VerifyTorrentContent(ExecutorService executorService) {
         this.executorService = executorService;
     }
 
-    public TorrentValidationReport perform(final Torrent torrent, final Path torrentPath) throws InterruptedException, ExecutionException, IOException {
+    public TorrentVerificationReport perform(final Torrent torrent, final Path torrentPath) throws InterruptedException, ExecutionException, IOException {
 
         // Validate all the files (with lengths > 0) exist. If some files are missing the torrent won't validate
         final List<String> missingPaths = new LinkedList<>();
@@ -37,14 +36,14 @@ public class ValidateTorrentContent {
             }
         }
         if (!missingPaths.isEmpty()) {
-            return new TorrentValidationReport(TorrentValidationStatus.INCOMPLETE, missingPaths);
+            return new TorrentVerificationReport(TorrentVerificationStatus.INCOMPLETE, missingPaths);
         }
 
         final List<byte[]> hashes = getHashes(torrentPath,torrent.getFiles(),torrent.getPieceLength().intValue());
 
         final String piecesHashes = hashes.stream()
                 .map(bytes -> new BigInteger(1, bytes).toString(16))
-                .reduce((a, b) -> a + b).orElse("UnknownHash");
+                .reduce((a, b) -> a + b).get();
         //System.out.println("piecesHashes: " + piecesHashes);
 
         final String torrentPiecesHashes = torrent.getPieces().stream()
@@ -54,7 +53,7 @@ public class ValidateTorrentContent {
         final boolean verified = piecesHashes.equals(torrentPiecesHashes);
         //System.out.println("verified: " + verified);
 
-        return new TorrentValidationReport(verified ? TorrentValidationStatus.VALIDATED : TorrentValidationStatus.FAILED);
+        return new TorrentVerificationReport(verified ? TorrentVerificationStatus.VERIFIED : TorrentVerificationStatus.FAILED);
     }
 
     private void processHashes(final List<Future<byte[]>> futures, final List<byte[]> hashes) throws InterruptedException, ExecutionException {

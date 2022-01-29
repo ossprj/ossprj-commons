@@ -3,22 +3,22 @@ package com.ossprj.commons.torrent.model;
 import java.util.Collections;
 import java.util.List;
 
-public class TorrentValidationReport {
+public class TorrentVerificationReport {
 
-    private final TorrentValidationStatus status;
+    private final TorrentVerificationStatus status;
     private final List<String> missingPaths;
 
-    public TorrentValidationReport(TorrentValidationStatus status) {
+    public TorrentVerificationReport(TorrentVerificationStatus status) {
         this.status = status;
         this.missingPaths = Collections.emptyList();
     }
 
-    public TorrentValidationReport(TorrentValidationStatus status, List<String> missingPaths) {
+    public TorrentVerificationReport(TorrentVerificationStatus status, List<String> missingPaths) {
         this.status = status;
         this.missingPaths = missingPaths;
     }
 
-    public TorrentValidationStatus getStatus() {
+    public TorrentVerificationStatus getStatus() {
         return status;
     }
 
@@ -28,7 +28,7 @@ public class TorrentValidationReport {
 
     @Override
     public String toString() {
-        return "TorrentValidationReport{" +
+        return "TorrentVerificationReport{" +
                 "status='" + status + '\'' +
                 ", missingPaths=" + missingPaths +
                 '}';
