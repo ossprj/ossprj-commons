@@ -8,8 +8,11 @@ import java.nio.file.Path;
  */
 public class SearchPath {
 
-    private final Path basePath;
-    private final Integer searchDepth;
+    private Path basePath;
+    private Integer searchDepth;
+
+    public SearchPath() {
+    }
 
     public SearchPath(Path basePath, Integer searchDepth) {
         this.basePath = basePath;
@@ -20,8 +23,16 @@ public class SearchPath {
         return basePath;
     }
 
+    public void setBasePath(Path basePath) {
+        this.basePath = basePath;
+    }
+
     public Integer getSearchDepth() {
         return searchDepth;
+    }
+
+    public void setSearchDepth(Integer searchDepth) {
+        this.searchDepth = searchDepth;
     }
 
     @Override
