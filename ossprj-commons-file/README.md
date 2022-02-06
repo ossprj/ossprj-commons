@@ -2,13 +2,17 @@
 
 ## DirectoryContentHash
 
-A "directory content hash" which can be used to quickly compare the contents of two directories. It is computed as such:
+A hash which can be used to quickly compare the contents of two directories. 
+
+It can also be used to compare the contents of a directory to the contents of a torrent via the equivalent [TorrentContentHash](https://github.com/ossprj/ossprj-commons/tree/main/ossprj-commons-torrent#torrentcontenthash)
+
+It is computed as such:
 
 * Find all file paths recursively in a directory (ignores empty directories), relative to the parent directory and append the file length to that relative path
 * Remove OS specific file separators 
 * Lower case them
 * Sort them alphabetically 
-* Concatenates them into a string 
+* Concatenate them into a string 
 * MD5 hash that string
 
 
