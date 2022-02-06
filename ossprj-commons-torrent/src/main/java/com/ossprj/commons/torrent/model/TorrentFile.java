@@ -2,8 +2,8 @@ package com.ossprj.commons.torrent.model;
 
 public class TorrentFile {
 
-    public final String path;
-    public final Long length;
+    private final String path;
+    private final Long length;
 
     public TorrentFile(String path, Long length) {
         this.path = path;
