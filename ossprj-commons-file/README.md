@@ -64,7 +64,7 @@ Given the directory structure
 
     /basePath1/volume1/partition1/fileset1
     /basePath1/volume1/partition2/fileset2
-    /basePath1/volume2/partition2/fileset3
+    /basePath1/volume2/partition1/fileset3
 
 A SearchPath with:
 * basePath "/basePath1" and searchDepth 3
@@ -80,7 +80,7 @@ Yields the List of Path(s)
 
     /basePath1/volume1/partition1/fileset1
     /basePath1/volume1/partition2/fileset2
-    /basePath1/volume2/partition2/fileset3
+    /basePath1/volume2/partition1/fileset3
 
 ### Example: Multiple Top Levels With Multiple Intermediate Directories
 
