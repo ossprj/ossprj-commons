@@ -12,11 +12,11 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * Calculates a "directory hash" which can be used to quickly compare the contents of two directories
+ * Calculates a "directory content hash" which can be used to quickly compare the contents of two directories
  * <p>
- * Finds all files recursively in a directory, relativizes them (and appends the file length to that relative path),
- * removes OS specific file separators, lower cases them, sorts them, concatenates them into a string and then MD5
- * hashes that string.
+ * Find all file paths recursively in a directory (ignores empty directories), relative to the parent directory and
+ * append the file length to that relative path, removes OS specific file separators, lower cases them, sorts them,
+ * concatenates them into a string and then MD5 hashes that string.
  * <p>
  * NOTE:
  * This hash does NOT take into account the contents of the files just the contents of the directory.

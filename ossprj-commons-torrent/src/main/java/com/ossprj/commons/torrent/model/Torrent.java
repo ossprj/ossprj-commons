@@ -10,7 +10,6 @@ import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -21,7 +20,7 @@ public class Torrent {
     private final URI announce;
     //private final List<List<URI>> announceUrls;
     private final String createdBy;
-    private final Date creationDate;
+    private final Long creationDate;
     private final String comment;
     private final List<TorrentFile> files;
     private final String infoHash;
@@ -49,7 +48,7 @@ public class Torrent {
         announce = new URI(new String(((ByteBuffer) data.get("announce")).array()));
 
         createdBy = data.containsKey("created by") ? new String(((ByteBuffer) data.get("created by")).array()) : null;
-        creationDate = data.containsKey("creation date") ? new Date((Long) data.get("creation date") * 1000) : null;
+        creationDate = data.containsKey("creation date") ? (Long) data.get("creation date") : null;
         comment = data.containsKey("comment") ? new String(((ByteBuffer) data.get("comment")).array()) : null;
 
         final Map<String, Object> info = (Map<String, Object>) data.get("info");
@@ -64,7 +63,7 @@ public class Torrent {
         final ByteBuffer piecesBytes = (ByteBuffer) info.get("pieces");
         final int numberOfPieces = piecesBytes.capacity() / 20;
         byte[] pieceBytes = new byte[20];
-        for (int x = 1 ; x <= numberOfPieces ; x++ ) {
+        for (int x = 1; x <= numberOfPieces; x++) {
             piecesBytes.get(pieceBytes);
             pieces.add(new BigInteger(1, pieceBytes).toString(16));
         }
@@ -97,7 +96,7 @@ public class Torrent {
         return createdBy;
     }
 
-    public Date getCreationDate() {
+    public Long getCreationDate() {
         return creationDate;
     }
 
