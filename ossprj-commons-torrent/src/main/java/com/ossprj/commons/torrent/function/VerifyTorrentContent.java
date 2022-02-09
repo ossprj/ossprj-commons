@@ -29,10 +29,13 @@ public class VerifyTorrentContent {
         // Validate all the files (with lengths > 0) exist. If some files are missing the torrent won't validate
         final List<String> missingPaths = new LinkedList<>();
         for (final TorrentFile torrentFile : torrent.getFiles()) {
-            final Path torrentFilePath = torrentPath.resolve(torrentFile.getPath());
-            // If the file is missing add it to the list
-            if (!torrentFilePath.toFile().exists()) {
-                missingPaths.add(torrentFile.getPath());
+            // Ignore non-zero length files
+            if (torrentFile.getLength() > 0) {
+                final Path torrentFilePath = torrentPath.resolve(torrentFile.getPath());
+                // If the file is missing add it to the list
+                if (!torrentFilePath.toFile().exists()) {
+                    missingPaths.add(torrentFile.getPath());
+                }
             }
         }
         if (!missingPaths.isEmpty()) {
@@ -72,24 +75,27 @@ public class VerifyTorrentContent {
 
         for (TorrentFile torrentFile : torrentFiles) {
 
-            //System.out.println("Processing: " + torrentFile.getPath());
-            try (FileInputStream fis = new FileInputStream(torrentPath.resolve(torrentFile.getPath()).toFile())) {
-                while (true) {
+            // Ignore empty files
+            if (torrentFile.getLength() > 0) {
+                //System.out.println("Processing: " + torrentFile.getPath());
+                try (FileInputStream fis = new FileInputStream(torrentPath.resolve(torrentFile.getPath()).toFile())) {
+                    while (true) {
 
-                    // Read up to the number of bytes we need to fill out the current pieceBuffer
-                    int readFromStream = fis.read(pieceBuffer, totalBytesRead, pieceBuffer.length - totalBytesRead);
+                        // Read up to the number of bytes we need to fill out the current pieceBuffer
+                        int readFromStream = fis.read(pieceBuffer, totalBytesRead, pieceBuffer.length - totalBytesRead);
 
-                    // If we are out of bytes to read from this stream, move on to the next
-                    if (readFromStream < 0) {
-                        break;
-                    }
+                        // If we are out of bytes to read from this stream, move on to the next
+                        if (readFromStream < 0) {
+                            break;
+                        }
 
-                    totalBytesRead += readFromStream;
-                    // If we've filled up the buffer send it off to be hashed
-                    if (totalBytesRead == pieceBuffer.length) {
-                        futures.add(executorService.submit(new ComputePieceHash(Arrays.copyOf(pieceBuffer, pieceBuffer.length))));
-                        processHashes(futures, hashes);
-                        totalBytesRead = 0;
+                        totalBytesRead += readFromStream;
+                        // If we've filled up the buffer send it off to be hashed
+                        if (totalBytesRead == pieceBuffer.length) {
+                            futures.add(executorService.submit(new ComputePieceHash(Arrays.copyOf(pieceBuffer, pieceBuffer.length))));
+                            processHashes(futures, hashes);
+                            totalBytesRead = 0;
+                        }
                     }
                 }
             }
