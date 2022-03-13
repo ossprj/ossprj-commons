@@ -20,7 +20,7 @@ NOTE
 * This hash does NOT take into account the contents of the files just the contents of the directory
 * Two directories with an identical set of files with identical lengths but different file contents will hash the same
 
-## SearchPath / GetPathsFromSearchPaths
+## SearchPath
 
 A SearchPath consists of a base path and a search depth.
 
@@ -31,25 +31,25 @@ Only directories will be included.
 ### Example: Single Top Level Directory
 Given the directory structure
 
-    /basePath1/directory1
-    /basePath1/directory2
-    /basePath1/directory3
+    /basePath1/fileset1
+    /basePath1/fileset2
+    /basePath1/fileset3
 
 A SearchPath with:
 * basePath "/basePath1" and searchDepth 1 
   
 yields the List of Path(s)
 
-    /basePath1/directory1
-    /basePath1/directory2
-    /basePath1/directory3
+    /basePath1/fileset1
+    /basePath1/fileset2
+    /basePath1/fileset3
 
 ### Example: Single Top Level With Intermediate Directory
 Given the directory structure
 
-    /basePath1/volume1/directory1
-    /basePath1/volume1/directory2
-    /basePath1/volume1/directory3
+    /basePath1/volume1/fileset1
+    /basePath1/volume1/fileset2
+    /basePath1/volume1/fileset3
 
 A SearchPath with:
 * basePath "/basePath1" and searchDepth 2
@@ -58,9 +58,9 @@ A SearchPath with:
 
 yields the List of Path(s)
 
-    /basePath1/volume1/directory1
-    /basePath1/volume1/directory2
-    /basePath1/volume1/directory3
+    /basePath1/volume1/fileset1
+    /basePath1/volume1/fileset2
+    /basePath1/volume1/fileset3
 
 ### Example: Single Top Level With Multiple Intermediate Directories
 
@@ -68,7 +68,7 @@ Given the directory structure
 
     /basePath1/volume1/partition1/fileset1
     /basePath1/volume1/partition2/fileset2
-    /basePath1/volume2/partition1/fileset3
+    /basePath1/volume2/partition3/fileset3
 
 A SearchPath with:
 * basePath "/basePath1" and searchDepth 3
@@ -78,13 +78,13 @@ A SearchPath with:
 * OR SearchPath(s)
 * basePath "/basePath1/volume1/partition1" and searchDepth 1
 * basePath "/basePath1/volume1/partition2" and searchDepth 1
-* basePath "/basePath1/volume2/partition1" and searchDepth 1
+* basePath "/basePath1/volume2/partition3" and searchDepth 1
 
 Yields the List of Path(s)
 
     /basePath1/volume1/partition1/fileset1
     /basePath1/volume1/partition2/fileset2
-    /basePath1/volume2/partition1/fileset3
+    /basePath1/volume2/partition3/fileset3
 
 ### Example: Multiple Top Levels With Multiple Intermediate Directories
 
@@ -98,8 +98,13 @@ Given the directory structure
 The SearchPath(s):
 * basePath "/basePath1" and searchDepth 3
 * basePath "/basePath2" and searchDepth 3
+* OR 
+* basePath "/basePath1/volume1" and searchDepth 2
+* basePath "/basePath1/volume2" and searchDepth 2
+* basePath "/basePath2/volume3" and searchDepth 2
+* basePath "/basePath2/volume4" and searchDepth 2
 
-Yield the List of Path(s)
+Yields the List of Path(s)
 
     /basePath1/volume1/partition1/fileset1
     /basePath1/volume2/partition2/fileset2
