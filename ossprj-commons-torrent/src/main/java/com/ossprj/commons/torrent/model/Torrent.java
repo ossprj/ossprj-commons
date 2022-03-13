@@ -17,6 +17,9 @@ import java.util.stream.Collectors;
 
 public class Torrent {
 
+    // \uFFFD is the character returned when encountering an unprintable UTF-8 character
+    private static final String UNPRINTABLE_UTF8_CHARACTER = "�";
+
     private final URI announce;
     //private final List<List<URI>> announceUrls;
     private final String createdBy;
@@ -86,6 +89,28 @@ public class Torrent {
         }
 
 
+    }
+
+    public boolean containsZeroLengthFiles() {
+        for (final TorrentFile torrentFile : getFiles()) {
+            if (torrentFile.getLength() == 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean containsUnprintableUTF8CharactersInName() {
+        return getName() != null && getName().contains(UNPRINTABLE_UTF8_CHARACTER);
+    }
+
+    public boolean containsUnprintableUTF8CharactersInFiles() {
+        for (final TorrentFile torrentFile : getFiles()) {
+            if (torrentFile.getPath().contains(UNPRINTABLE_UTF8_CHARACTER)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public URI getAnnounce() {
