@@ -20,27 +20,40 @@ public class Torrent {
     // \uFFFD is the character returned when encountering an unprintable UTF-8 character
     private static final String UNPRINTABLE_UTF8_CHARACTER = "�";
 
+    private static final char[] HEX_ARRAY = "0123456789abcdef".toCharArray();
+
     private final URI announce;
     //private final List<List<URI>> announceUrls;
     private final String createdBy;
     private final Long creationDate;
     private final String comment;
     private final List<TorrentFile> files;
-    private final String infoHash;
+    private final byte[] infoHash;
+    private final String infoHashHex;
     private final String name;
     private final Long pieceLength;
     private final List<String> pieces;
 
     private static final Bencode bencode = new Bencode(true);
 
-    private String sha1(byte[] data) {
+    private byte[] sha1(byte[] data) {
         try {
             final MessageDigest messageDigest = MessageDigest.getInstance("SHA-1");
             messageDigest.update(data);
-            return new BigInteger(1, messageDigest.digest()).toString(16);
+            return messageDigest.digest();
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private String getInfoHashAsHex(byte[] bytes) {
+        char[] hexChars = new char[bytes.length * 2];
+        for (int j = 0; j < bytes.length; j++) {
+            int v = bytes[j] & 0xFF;
+            hexChars[j * 2] = HEX_ARRAY[v >>> 4];
+            hexChars[j * 2 + 1] = HEX_ARRAY[v & 0x0F];
+        }
+        return new String(hexChars);
     }
 
     public Torrent(final byte[] bytes) throws URISyntaxException {
@@ -58,6 +71,7 @@ public class Torrent {
 
         final byte[] infoBytes = bencode.encode(info);
         infoHash = sha1(infoBytes);
+        infoHashHex = getInfoHashAsHex(infoHash);
 
         name = info.containsKey("name") ? new String(((ByteBuffer) info.get("name")).array()) : null;
         pieceLength = (Long) info.get("piece length");
@@ -133,8 +147,12 @@ public class Torrent {
         return files;
     }
 
-    public String getInfoHash() {
+    public byte[] getInfoHash() {
         return infoHash;
+    }
+
+    public String getInfoHashHex() {
+        return infoHashHex;
     }
 
     public String getName() {
@@ -157,7 +175,7 @@ public class Torrent {
                 ", creationDate=" + creationDate +
                 ", comment='" + comment + '\'' +
                 ", files=" + files +
-                ", infoHash='" + infoHash + '\'' +
+                ", infoHashHex='" + infoHashHex + '\'' +
                 ", name='" + name + '\'' +
                 ", pieceLength=" + pieceLength +
                 '}';

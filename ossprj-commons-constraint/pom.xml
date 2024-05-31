@@ -5,9 +5,10 @@
     <artifactId>ossprj-commons-constraint</artifactId>
 
     <parent>
-        <groupId>com.ossprj.commons</groupId>
-        <artifactId>ossprj-commons</artifactId>
-        <version>1.0.0</version>
+        <groupId>com.ossprj.poms</groupId>
+        <artifactId>ossprj-poms-base</artifactId>
+        <version>1.0.1-SNAPSHOT</version>
+        <relativePath/>
     </parent>
 
     <dependencies>

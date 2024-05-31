@@ -17,6 +17,8 @@ public class CalculateTorrentContentHash implements Function<Torrent, String> {
         }
 
         final String concatenatedPaths = torrent.getFiles().stream()
+                // ??? Filter out zero length files
+                // .filter(torrentFile -> torrentFile.getLength() == 0)
                 .map(torrentFile -> torrentFile.getPath() + torrentFile.getLength())
                 // Pull out the OS specific file separator character
                 .map(torrentFile -> torrentFile.replaceAll(File.separator, ""))

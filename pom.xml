@@ -4,19 +4,15 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.ossprj.commons</groupId>
     <artifactId>ossprj-commons</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1-SNAPSHOT</version>
     <packaging>pom</packaging>
-
-    <parent>
-        <groupId>com.ossprj.poms</groupId>
-        <artifactId>ossprj-poms-base</artifactId>
-        <version>1.0.0</version>
-    </parent>
 
     <modules>
         <module>ossprj-commons-constraint</module>
         <module>ossprj-commons-file</module>
+        <module>ossprj-commons-metadata-audio</module>
         <module>ossprj-commons-torrent</module>
+        <module>ossprj-commons-web</module>
     </modules>
 
 </project>

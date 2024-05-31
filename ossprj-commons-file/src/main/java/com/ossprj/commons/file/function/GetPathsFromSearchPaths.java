@@ -2,21 +2,24 @@ package com.ossprj.commons.file.function;
 
 import com.ossprj.commons.file.model.SearchPath;
 
+import java.io.File;
 import java.nio.file.Path;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * Builds a <code>List</code> of <code>Path</code>s from a <code>List</code> of <code>SearchPath</code>s
- *
  */
-public class GetPathsFromSearchPaths implements Function<List<SearchPath>, List<Path>> {
+public class GetPathsFromSearchPaths {
 
-    private final FindAllDirectoriesAtDepth findAllDirectoriesAtDepth = new FindAllDirectoriesAtDepth();
+    private final FindAllFilesAtDepth findAllFilesAtDepth = new FindAllFilesAtDepth();
 
-    @Override
     public List<Path> apply(List<SearchPath> searchPaths) {
+        return apply(searchPaths, (file) -> true);
+    }
+
+    public List<Path> apply(List<SearchPath> searchPaths, final Predicate<File> filter) {
 
         final List<Path> paths = new LinkedList<>();
 
@@ -30,7 +33,7 @@ public class GetPathsFromSearchPaths implements Function<List<SearchPath>, List<
             }
             // TODO: Validate SearchPath instance ?
 
-            paths.addAll(findAllDirectoriesAtDepth.apply(searchPath.getBasePath(), searchPath.getSearchDepth()));
+            paths.addAll(findAllFilesAtDepth.apply(searchPath.getBasePath(), filter, searchPath.getSearchDepth()));
         }
 
         return paths;

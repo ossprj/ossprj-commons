@@ -17,3 +17,8 @@ It is computed as such:
 NOTE
 * This hash does NOT take into account the contents of the files just the contents of the torrent
 * Two torrents with an identical set of files with identical lengths but different file contents will hash the same
+
+
+https://stackoverflow.com/questions/1976007/what-characters-are-forbidden-in-windows-and-linux-directory-names
+https://docs.microsoft.com/en-us/windows/win32/fileio/naming-a-file
+https://en.wikipedia.org/wiki/Filename#Reserved_characters_and_words
