@@ -3,8 +3,10 @@ package com.ossprj.commons.file.function;
 import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.nio.file.FileVisitOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
@@ -32,7 +34,7 @@ public class CalculateDirectoryContentHash implements Function<Path, String> {
         // Find all files in the directory, ignore directories
         final List<Path> files;
         try {
-            files = Files.find(directory, Integer.MAX_VALUE, (path, attributes) -> !path.toFile().isDirectory())
+            files = Files.find(directory, Integer.MAX_VALUE, (path, attributes) -> !path.toFile().isDirectory(), FileVisitOption.FOLLOW_LINKS)
                     .collect(Collectors.toList());
         } catch (IOException e) {
             throw new RuntimeException(e);

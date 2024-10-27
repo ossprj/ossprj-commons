@@ -10,7 +10,7 @@
     <modules>
         <module>ossprj-commons-constraint</module>
         <module>ossprj-commons-file</module>
-        <module>ossprj-commons-metadata-audio</module>
+        <!--<module>ossprj-commons-metadata-audio</module>-->
         <module>ossprj-commons-torrent</module>
         <module>ossprj-commons-web</module>
     </modules>
