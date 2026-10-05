@@ -7,7 +7,6 @@ import com.ossprj.commons.torrent.model.TorrentVerificationStatus;
 
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.math.BigInteger;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -18,10 +17,36 @@ import java.util.concurrent.Future;
 
 public class VerifyTorrentContent {
 
+    private static final char[] HEX_ARRAY = "0123456789abcdef".toCharArray();
+
     private final ExecutorService executorService;
 
     public VerifyTorrentContent(ExecutorService executorService) {
         this.executorService = executorService;
+    }
+
+    private static String toHex(byte[] bytes) {
+        char[] hexChars = new char[bytes.length * 2];
+        for (int j = 0; j < bytes.length; j++) {
+            int v = bytes[j] & 0xFF;
+            hexChars[j * 2] = HEX_ARRAY[v >>> 4];
+            hexChars[j * 2 + 1] = HEX_ARRAY[v & 0x0F];
+        }
+        return new String(hexChars);
+    }
+
+    private Path resolvePath(final Path basePath, final Torrent torrent, final TorrentFile torrentFile) {
+        Path direct = basePath.resolve(torrentFile.getPath());
+        if (direct.toFile().exists()) {
+            return direct;
+        }
+        if (torrent.getName() != null && !torrent.getName().isEmpty()) {
+            Path nested = basePath.resolve(torrent.getName()).resolve(torrentFile.getPath());
+            if (nested.toFile().exists()) {
+                return nested;
+            }
+        }
+        return direct;
     }
 
     public TorrentVerificationReport perform(final Torrent torrent, final Path torrentPath) throws InterruptedException, ExecutionException, IOException {
@@ -31,7 +56,7 @@ public class VerifyTorrentContent {
         for (final TorrentFile torrentFile : torrent.getFiles()) {
             // Ignore non-zero length files
             if (torrentFile.getLength() > 0) {
-                final Path torrentFilePath = torrentPath.resolve(torrentFile.getPath());
+                final Path torrentFilePath = resolvePath(torrentPath, torrent, torrentFile);
                 // If the file is missing add it to the list
                 if (!torrentFilePath.toFile().exists()) {
                     missingPaths.add(torrentFile.getPath());
@@ -42,15 +67,15 @@ public class VerifyTorrentContent {
             return new TorrentVerificationReport(TorrentVerificationStatus.INCOMPLETE, missingPaths);
         }
 
-        final List<byte[]> hashes = getHashes(torrentPath,torrent.getFiles(),torrent.getPieceLength().intValue());
+        final List<byte[]> hashes = getHashes(torrentPath, torrent, torrent.getPieceLength().intValue());
 
         final String piecesHashes = hashes.stream()
-                .map(bytes -> new BigInteger(1, bytes).toString(16))
-                .reduce((a, b) -> a + b).get();
+                .map(VerifyTorrentContent::toHex)
+                .reduce((a, b) -> a + b).orElse("");
         //System.out.println("piecesHashes: " + piecesHashes);
 
         final String torrentPiecesHashes = torrent.getPieces().stream()
-                .reduce((a, b) -> a + b).get();
+                .reduce((a, b) -> a + b).orElse("");
         //System.out.println("torrentPiecesHashes: " + torrentPiecesHashes);
 
         final boolean verified = piecesHashes.equals(torrentPiecesHashes);
@@ -65,7 +90,7 @@ public class VerifyTorrentContent {
         }
     }
 
-    private List<byte[]> getHashes(final Path torrentPath, final List<TorrentFile> torrentFiles, final Integer pieceLength) throws IOException, ExecutionException, InterruptedException {
+    private List<byte[]> getHashes(final Path torrentPath, final Torrent torrent, final Integer pieceLength) throws IOException, ExecutionException, InterruptedException {
 
         final List<byte[]> hashes = new LinkedList<>();
         final List<Future<byte[]>> futures = new LinkedList<>();
@@ -73,12 +98,13 @@ public class VerifyTorrentContent {
         byte[] pieceBuffer = new byte[pieceLength];
         int totalBytesRead = 0;
 
-        for (TorrentFile torrentFile : torrentFiles) {
+        for (TorrentFile torrentFile : torrent.getFiles()) {
 
             // Ignore empty files
             if (torrentFile.getLength() > 0) {
                 //System.out.println("Processing: " + torrentFile.getPath());
-                try (FileInputStream fis = new FileInputStream(torrentPath.resolve(torrentFile.getPath()).toFile())) {
+                Path filePath = resolvePath(torrentPath, torrent, torrentFile);
+                try (FileInputStream fis = new FileInputStream(filePath.toFile())) {
                     while (true) {
 
                         // Read up to the number of bytes we need to fill out the current pieceBuffer

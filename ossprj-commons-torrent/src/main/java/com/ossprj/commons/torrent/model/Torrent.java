@@ -4,10 +4,10 @@ import com.dampcake.bencode.Bencode;
 import com.dampcake.bencode.Type;
 
 import java.io.File;
-import java.math.BigInteger;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.LinkedList;
@@ -23,7 +23,7 @@ public class Torrent {
     private static final char[] HEX_ARRAY = "0123456789abcdef".toCharArray();
 
     private final URI announce;
-    //private final List<List<URI>> announceUrls;
+    private final List<List<URI>> announceList;
     private final String createdBy;
     private final Long creationDate;
     private final String comment;
@@ -46,7 +46,7 @@ public class Torrent {
         }
     }
 
-    private String getInfoHashAsHex(byte[] bytes) {
+    private static String getInfoHashAsHex(byte[] bytes) {
         char[] hexChars = new char[bytes.length * 2];
         for (int j = 0; j < bytes.length; j++) {
             int v = bytes[j] & 0xFF;
@@ -56,33 +56,137 @@ public class Torrent {
         return new String(hexChars);
     }
 
+    private static String byteBufferToString(ByteBuffer buffer) {
+        if (buffer == null) {
+            return null;
+        }
+        ByteBuffer duplicate = buffer.duplicate();
+        byte[] bytes = new byte[duplicate.remaining()];
+        duplicate.get(bytes);
+        return new String(bytes, StandardCharsets.UTF_8);
+    }
+
+    private static byte[] extractRawInfoBytes(final byte[] data) {
+        if (data == null || data.length == 0 || data[0] != 'd') {
+            return null;
+        }
+        try {
+            int pos = 1;
+            while (pos < data.length && data[pos] != 'e') {
+                int colon = pos;
+                while (colon < data.length && data[colon] != ':') {
+                    colon++;
+                }
+                if (colon >= data.length) break;
+                int keyLen = Integer.parseInt(new String(data, pos, colon - pos, StandardCharsets.US_ASCII));
+                int keyStart = colon + 1;
+                int keyEnd = keyStart + keyLen;
+                String key = new String(data, keyStart, keyLen, StandardCharsets.ISO_8859_1);
+
+                int valEnd = skipBencodedElement(data, keyEnd);
+
+                if ("info".equals(key)) {
+                    byte[] infoBytes = new byte[valEnd - keyEnd];
+                    System.arraycopy(data, keyEnd, infoBytes, 0, infoBytes.length);
+                    return infoBytes;
+                }
+                pos = valEnd;
+            }
+        } catch (Exception ignored) {
+        }
+        return null;
+    }
+
+    private static int skipBencodedElement(final byte[] data, int pos) {
+        if (pos >= data.length) return data.length;
+        byte b = data[pos];
+        if (b == 'i') {
+            int end = pos + 1;
+            while (end < data.length && data[end] != 'e') end++;
+            return end + 1;
+        } else if (b == 'l') {
+            int cur = pos + 1;
+            while (cur < data.length && data[cur] != 'e') {
+                cur = skipBencodedElement(data, cur);
+            }
+            return cur + 1;
+        } else if (b == 'd') {
+            int cur = pos + 1;
+            while (cur < data.length && data[cur] != 'e') {
+                cur = skipBencodedElement(data, cur); // key
+                cur = skipBencodedElement(data, cur); // value
+            }
+            return cur + 1;
+        } else if (b >= '0' && b <= '9') {
+            int colon = pos;
+            while (colon < data.length && data[colon] != ':') colon++;
+            int len = Integer.parseInt(new String(data, pos, colon - pos, StandardCharsets.US_ASCII));
+            return colon + 1 + len;
+        }
+        throw new IllegalArgumentException("Invalid bencode token at " + pos);
+    }
+
     public Torrent(final byte[] bytes) throws URISyntaxException {
 
         final Map<String, Object> data = bencode.decode(bytes, Type.DICTIONARY);
 
-        // Need to handle multiple/tiered announce urls also
-        announce = new URI(new String(((ByteBuffer) data.get("announce")).array()));
+        URI parsedAnnounce = null;
+        if (data.containsKey("announce") && data.get("announce") != null) {
+            String announceStr = byteBufferToString((ByteBuffer) data.get("announce"));
+            if (announceStr != null && !announceStr.trim().isEmpty()) {
+                parsedAnnounce = new URI(announceStr);
+            }
+        }
+        announce = parsedAnnounce;
 
-        createdBy = data.containsKey("created by") ? new String(((ByteBuffer) data.get("created by")).array()) : null;
+        List<List<URI>> parsedAnnounceList = new LinkedList<>();
+        if (data.containsKey("announce-list") && data.get("announce-list") != null) {
+            try {
+                List<List<?>> tiers = (List<List<?>>) data.get("announce-list");
+                for (List<?> tier : tiers) {
+                    List<URI> tierUrls = new LinkedList<>();
+                    for (Object item : tier) {
+                        if (item instanceof ByteBuffer) {
+                            String uriStr = byteBufferToString((ByteBuffer) item);
+                            if (uriStr != null && !uriStr.trim().isEmpty()) {
+                                tierUrls.add(new URI(uriStr));
+                            }
+                        }
+                    }
+                    if (!tierUrls.isEmpty()) {
+                        parsedAnnounceList.add(tierUrls);
+                    }
+                }
+            } catch (Exception ignored) {
+            }
+        }
+        announceList = parsedAnnounceList;
+
+        createdBy = data.containsKey("created by") ? byteBufferToString((ByteBuffer) data.get("created by")) : null;
         creationDate = data.containsKey("creation date") ? (Long) data.get("creation date") : null;
-        comment = data.containsKey("comment") ? new String(((ByteBuffer) data.get("comment")).array()) : null;
+        comment = data.containsKey("comment") ? byteBufferToString((ByteBuffer) data.get("comment")) : null;
 
         final Map<String, Object> info = (Map<String, Object>) data.get("info");
 
-        final byte[] infoBytes = bencode.encode(info);
-        infoHash = sha1(infoBytes);
+        byte[] rawInfo = extractRawInfoBytes(bytes);
+        if (rawInfo == null) {
+            rawInfo = bencode.encode(info);
+        }
+        infoHash = sha1(rawInfo);
         infoHashHex = getInfoHashAsHex(infoHash);
 
-        name = info.containsKey("name") ? new String(((ByteBuffer) info.get("name")).array()) : null;
-        pieceLength = (Long) info.get("piece length");
+        name = info.containsKey("name") ? byteBufferToString((ByteBuffer) info.get("name")) : null;
+        pieceLength = info.containsKey("piece length") && info.get("piece length") != null ? (Long) info.get("piece length") : null;
 
         pieces = new LinkedList<>();
-        final ByteBuffer piecesBytes = (ByteBuffer) info.get("pieces");
-        final int numberOfPieces = piecesBytes.capacity() / 20;
-        byte[] pieceBytes = new byte[20];
-        for (int x = 1; x <= numberOfPieces; x++) {
-            piecesBytes.get(pieceBytes);
-            pieces.add(new BigInteger(1, pieceBytes).toString(16));
+        if (info.containsKey("pieces") && info.get("pieces") != null) {
+            final ByteBuffer piecesBytes = (ByteBuffer) info.get("pieces");
+            final int numberOfPieces = piecesBytes.remaining() / 20;
+            byte[] pieceBytes = new byte[20];
+            for (int x = 1; x <= numberOfPieces; x++) {
+                piecesBytes.get(pieceBytes);
+                pieces.add(getInfoHashAsHex(pieceBytes));
+            }
         }
 
         // If this is a multi-file torrent extract the individual files
@@ -91,15 +195,16 @@ public class Torrent {
             files = filesContent.stream()
                     .map(torrentFile -> {
                         final String path = ((List<ByteBuffer>) torrentFile.get("path")).stream()
-                                .map(bb -> new String(bb.array()))
-                                .reduce((a, b) -> a + File.separator + b).get();
+                                .map(Torrent::byteBufferToString)
+                                .reduce((a, b) -> a + File.separator + b).orElse("");
                         final Long length = Long.valueOf(torrentFile.get("length").toString());
                         return new TorrentFile(path, length);
                     }).collect(Collectors.toList());
         } else {
             // Otherwise just extract the info for the single file
             files = new LinkedList<>();
-            files.add(new TorrentFile(name, (Long) info.get("length")));
+            Long length = info.containsKey("length") && info.get("length") != null ? (Long) info.get("length") : null;
+            files.add(new TorrentFile(name, length));
         }
 
 
@@ -129,6 +234,10 @@ public class Torrent {
 
     public URI getAnnounce() {
         return announce;
+    }
+
+    public List<List<URI>> getAnnounceList() {
+        return announceList;
     }
 
     public String getCreatedBy() {
@@ -171,6 +280,7 @@ public class Torrent {
     public String toString() {
         return "Torrent{" +
                 "announce=" + announce +
+                ", announceList=" + announceList +
                 ", createdBy='" + createdBy + '\'' +
                 ", creationDate=" + creationDate +
                 ", comment='" + comment + '\'' +
