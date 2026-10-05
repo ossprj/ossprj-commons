@@ -1,8 +1,8 @@
 package com.ossprj.commons.web.facade;
 
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.util.EntityUtils;
+import org.apache.hc.client5.http.classic.HttpClient;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,15 +25,18 @@ public class DownloadAndSaveToFile {
                       final Map<String, String> headers) throws IOException {
 
         final HttpGet get = new HttpGet(url);
-        headers.forEach(get::addHeader);
+        if (headers != null) {
+            headers.forEach(get::addHeader);
+        }
         logger.debug("Get: {}", get);
 
-        final byte[] bytes = EntityUtils.toByteArray(httpClient.execute(get).getEntity());
+        final byte[] bytes = httpClient.execute(get, response -> EntityUtils.toByteArray(response.getEntity()));
         logger.debug("Bytes: {}", bytes);
 
-        final FileOutputStream fos = new FileOutputStream(filePath.toFile());
-        fos.write(bytes);
-        fos.flush();
+        try (final FileOutputStream fos = new FileOutputStream(filePath.toFile())) {
+            fos.write(bytes);
+            fos.flush();
+        }
 
     }
 }

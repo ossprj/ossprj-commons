@@ -1,11 +1,10 @@
 package com.ossprj.commons.web.facade;
 
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.protocol.HttpContext;
-import org.apache.http.util.EntityUtils;
+import org.apache.hc.client5.http.classic.HttpClient;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.core5.http.HttpEntity;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
+import org.apache.hc.core5.http.protocol.HttpContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,19 +27,22 @@ public class DownloadBytes {
 
         final HttpGet get = new HttpGet(url);
 
-        final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        final HttpResponse response = httpClient.execute(get, context);
-        final HttpEntity entity = response.getEntity();
+        return httpClient.execute(get, context, response -> {
+            final HttpEntity entity = response.getEntity();
 
-        logger.debug("response: {} size: {} type: {}", response.getStatusLine(), entity.getContentLength(), entity.getContentType().getValue());
+            logger.debug("response: {} size: {} type: {}", response.getCode(), entity != null ? entity.getContentLength() : -1, entity != null ? entity.getContentType() : null);
 
-        if (response.getStatusLine().getStatusCode() != 200) {
-            EntityUtils.consume(entity);
-            throw new IllegalStateException("status code != 200");
-        }
+            if (response.getCode() != 200) {
+                EntityUtils.consume(entity);
+                throw new IllegalStateException("status code != 200");
+            }
 
-        baos.write(EntityUtils.toByteArray(entity));
-        baos.flush();
-        return baos.toByteArray();
+            final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            if (entity != null) {
+                baos.write(EntityUtils.toByteArray(entity));
+            }
+            baos.flush();
+            return baos.toByteArray();
+        });
     }
 }
